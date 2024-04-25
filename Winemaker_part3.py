@@ -4,17 +4,15 @@ import numpy as np
 import sklearn
 from sklearn.model_selection import train_test_split, RandomizedSearchCV
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import accuracy_score, precision_score, recall_score
-from xgboost import XGBClassifier
 
 # Load the dataset
 data_path = './vineyard_weather_1948-2017.csv'
 vineyard_df = pd.read_csv(data_path)
 
-# Convert 'DATE' to datetime and extract year and fweek
+# Convert 'DATE' to datetime and extract year and week
 vineyard_df['DATE'] = pd.to_datetime(vineyard_df['DATE'])
 vineyard_df['YEAR'] = vineyard_df['DATE'].dt.year
 vineyard_df['WEEK'] = vineyard_df['DATE'].dt.isocalendar().week
@@ -55,40 +53,27 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 
 # Define model pipelines
 pipelines = {
-    "Logistic Regression": Pipeline([('scaler', StandardScaler()), ('logreg', LogisticRegression(max_iter=1000))]),
     "Random Forest": Pipeline([('scaler', StandardScaler()), ('randomforestclassifier', RandomForestClassifier())]),
-    "Gradient Boosting": Pipeline([('scaler', StandardScaler()), ('gradientboostingclassifier', GradientBoostingClassifier())]),
-    "XGBoost": Pipeline([('scaler', StandardScaler()), ('xgbclassifier', XGBClassifier())])
+    "Gradient Boosting": Pipeline([('scaler', StandardScaler()), ('gradientboostingclassifier', GradientBoostingClassifier())])
 }
 
 param_distributions = {
     "Random Forest": {
-        'randomforestclassifier__n_estimators': [100, 200],
-        'randomforestclassifier__max_depth': [None, 5],
-        'randomforestclassifier__min_samples_split': [2, 5]
+        'randomforestclassifier__n_estimators': [100],
+        'randomforestclassifier__max_depth': [None, 5]
     },
     "Gradient Boosting": {
-        'gradientboostingclassifier__n_estimators': [100, 200],
-        'gradientboostingclassifier__max_depth': [3, 5],
-        'gradientboostingclassifier__learning_rate': [0.1, 0.3]
-    },
-    "XGBoost": {
-        'xgbclassifier__n_estimators': [100, 200],
-        'xgbclassifier__max_depth': [3, 5],
-        'xgbclassifier__learning_rate': [0.1, 0.3]
+        'gradientboostingclassifier__n_estimators': [100],
+        'gradientboostingclassifier__max_depth': [3, 5]
     }
 }
 
 # Train models with randomized search and store results
 model_performance = {}
 for name, pipeline in pipelines.items():
-    if name in param_distributions:
-        random_search = RandomizedSearchCV(pipeline, param_distributions[name], n_iter=8, cv=3, scoring='accuracy')
-        random_search.fit(X_train, y_train)
-        best_model = random_search.best_estimator_
-    else:
-        best_model = pipeline.fit(X_train, y_train)
-    
+    random_search = RandomizedSearchCV(pipeline, param_distributions[name], n_iter=4, cv=3, scoring='accuracy')
+    random_search.fit(X_train, y_train)
+    best_model = random_search.best_estimator_
     y_pred = best_model.predict(X_test)
     model_performance[name] = {
         'Accuracy': accuracy_score(y_test, y_pred),
@@ -96,8 +81,8 @@ for name, pipeline in pipelines.items():
         'Recall': recall_score(y_test, y_pred)
     }
 
-# Train the best-performing model (e.g., XGBoost)
-best_model_name = 'XGBoost'
+# Train the best-performing model (e.g., Gradient Boosting)
+best_model_name = 'Gradient Boosting'
 best_model = pipelines[best_model_name].fit(X_train, y_train)
 
 def evaluate_decision(botrytis_prob, no_sugar_prob, typical_sugar_prob, high_sugar_prob):
