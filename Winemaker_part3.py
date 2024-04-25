@@ -13,7 +13,7 @@ from xgboost import XGBClassifier
 data_path = './vineyard_weather_1948-2017.csv'
 vineyard_df = pd.read_csv(data_path)
 
-# Convert 'DATE' to datetime and extract year and week
+# Convert 'DATE' to datetime and extract year and fweek
 vineyard_df['DATE'] = pd.to_datetime(vineyard_df['DATE'])
 vineyard_df['YEAR'] = vineyard_df['DATE'].dt.year
 vineyard_df['WEEK'] = vineyard_df['DATE'].dt.isocalendar().week
